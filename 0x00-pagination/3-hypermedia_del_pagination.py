@@ -43,7 +43,7 @@ class Server:
 
     def get_hyper_index(self, index: int = None, page_size: int = 10) -> Dict:
         """method should return a dictionary with key-value pairs"""
-        assert <= index < len(self.dataset())
+        assert 0 <= index < len(self.dataset())
 
         indexed_dataset = self.indexed_dataset()
         indexed_page = {}
