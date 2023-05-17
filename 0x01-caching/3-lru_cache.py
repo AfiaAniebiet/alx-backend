@@ -1,35 +1,47 @@
-#!/usr/bin/env python3
-""" Python caching systems """
-
+#!/usr/bin/python3
+""" LRU Caching """
 from base_caching import BaseCaching
 
 
 class LRUCache(BaseCaching):
-    """ LRU caching system """
-
+    """ Class that inherits from BaseCaching and is a caching system """
     def __init__(self):
-        ''' Initialize class instance. '''
         super().__init__()
-        self.current_keys = []
+        self.head, self.tail = '-', '='
+        self.next, self.prev = {}, {}
+        self.handle(self.head, self.tail)
+
+    def handle(self, head, tail):
+        """ LRU algorithm, handle elements """
+        self.next[head], self.prev[tail] = tail, head
+
+    def _remove(self, key):
+        """ LRU algorithm, remove element """
+        self.handle(self.prev[key], self.next[key])
+        del self.prev[key], self.next[key], self.cache_data[key]
+
+    def _add(self, key, item):
+        """ LRU algorithm, add element """
+        self.cache_data[key] = item
+        self.handle(self.prev[self.tail], key)
+        self.handle(key, self.tail)
+        if len(self.cache_data) > BaseCaching.MAX_ITEMS:
+            print("DISCARD: {}".format(self.next[self.head]))
+            self._remove(self.next[self.head])
 
     def put(self, key, item):
-        """ Add an item in the cache """
-        if key is not None or item is not None:
-            self.cache_data[key] = item
-            if key not in self.current_keys:
-                self.current_keys.append(key)
-            else:
-                self.current_keys.append(self.current_keys.pop(
-                    self.current_keys.index(key)))
-            if len(self.current_keys) > BaseCaching.MAX_ITEMS:
-                discarded_key = self.current_keys.pop(0)
-                del self.cache_data[discarded_key]
-                print('DISCARD: {}'.format(discarded_key))
+        """ Assign to the dictionary """
+        if key and item:
+            if key in self.cache_data:
+                self._remove(key)
+            self._add(key, item)
 
     def get(self, key):
-        """ Get an item by key """
-        if key is not None and key in self.cache_data:
-            self.current_keys.append(self.current_keys.pop(
-                self.current_keys.index(key)))
-            return self.cache_data.get(key)
-        return None
+        """ Return the value linked """
+        if key is None or self.cache_data.get(key) is None:
+            return None
+        if key in self.cache_data:
+            value = self.cache_data[key]
+            self._remove(key)
+            self._add(key, value)
+            return value
