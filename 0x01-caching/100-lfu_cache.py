@@ -1,35 +1,49 @@
-#!/usr/bin/env python3
-""" Python caching systems """
-
+#!/usr/bin/python3
+""" LFU Caching """
 from base_caching import BaseCaching
+from collections import OrderedDict
 
 
 class LFUCache(BaseCaching):
-    """ LFU caching system """
-
+    """ Class that inherits from BaseCaching and is a caching system """
     def __init__(self):
-        ''' Initialize class instance. '''
         super().__init__()
-        self.current_keys = []
+        self.lru_cache = OrderedDict()
+        self.lfu_cache = {}
 
     def put(self, key, item):
-        """ Add an item in the cache """
-        if key is not None or item is not None:
-            self.cache_data[key] = item
-            if key not in self.current_keys:
-                self.current_keys.append(key)
+        """ Assign to the dictionary, LFU algorithm """
+        if key in self.lru_cache:
+            del self.lru_cache[key]
+        if len(self.lru_cache) > BaseCaching.MAX_ITEMS - 1:
+            min_value = min(self.lfu_cache.values())
+            lfu_keys = [k for k, v in self.lfu_cache.items() if v == min_value]
+            if len(lfu_keys) == 1:
+                print("DISCARD:", lfu_keys[0])
+                self.lru_cache.pop(lfu_keys[0])
+                del self.lfu_cache[lfu_keys[0]]
             else:
-                self.current_keys.append(self.current_keys.pop(
-                    self.current_keys.index(key)))
-            if len(self.current_keys) > BaseCaching.MAX_ITEMS:
-                discarded_key = self.current_keys.pop(0)
-                del self.cache_data[discarded_key]
-                print('DISCARD: {}'.format(discarded_key))
+                for k, _ in list(self.lru_cache.items()):
+                    if k in lfu_keys:
+                        print("DISCARD:", k)
+                        self.lru_cache.pop(k)
+                        del self.lfu_cache[k]
+                        break
+        self.lru_cache[key] = item
+        self.lru_cache.move_to_end(key)
+        if key in self.lfu_cache:
+            self.lfu_cache[key] += 1
+        else:
+            self.lfu_cache[key] = 1
+        self.cache_data = dict(self.lru_cache)
 
     def get(self, key):
-        """ Get an item by key """
-        if key is not None and key in self.cache_data:
-            self.current_keys.append(self.current_keys.pop(
-                self.current_keys.index(key)))
-            return self.cache_data.get(key)
-        return None
+        """ Return the value linked """
+        if key in self.lru_cache:
+            value = self.lru_cache[key]
+            self.lru_cache.move_to_end(key)
+            if key in self.lfu_cache:
+                self.lfu_cache[key] += 1
+            else:
+                self.lfu_cache[key] = 1
+            return value
